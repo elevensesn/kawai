@@ -25,18 +25,19 @@ local GAMES = {
 		Url = "https://raw.githubusercontent.com/sixlucass/kawai/refs/heads/main/Games/Rivals",
 	},
 	{
-		Name = "Da Hood",
-		PlaceIds = { 2788229376 },
-		Icon = "flame",
-		Url = "https://raw.githubusercontent.com/sixlucass/kawai/refs/heads/main/Games/DaHood",
+		Name = "SAB Modded",
+		PlaceIds = { 88570470406953 },
+		Icon = "gamepad-2",
+		Url = "https://raw.githubusercontent.com/elevensesn/kawai/refs/heads/main/Games/SAB%20Modded",
 	},
 }
 
 local LOAD_TIME = 1.2
 local SETTINGS_FILE = "GameHub_Settings.json"
-local KEY_FILE = "Kawai_SavedKey.txt"
-local CHECK_INTERVAL = 20 -- seconds between background key checks
+local KEY_FILE = "Kawai_Key"
+local CHECK_INTERVAL = 20
 local activeKey = nil
+local isLaunching = false
 
 local C = {
 	Window = Color3.fromRGB(11, 11, 11),
@@ -225,8 +226,6 @@ local function httpGet(url)
 	return game:HttpGet(url), 200
 end
 
--- Returns: success, keyOrMessage, reachable
--- reachable = false means the server could not be contacted (don't delete a saved key for that)
 local function validateKey(text)
 	local key = (tostring(text):gsub("%s+", "")):upper()
 	if key == "" then
@@ -468,6 +467,8 @@ local function buildHub()
 	end
 
 	local function launch(g)
+		if isLaunching then return end
+		isLaunching = true
 		gui:Destroy()
 		runGame(g)
 	end
@@ -628,7 +629,6 @@ local function buildHub()
 
 	setTab("Home")
 
-	-- Background check: kicks the player if their key gets revoked or expires mid-session
 	task.spawn(function()
 		while gui.Parent do
 			task.wait(CHECK_INTERVAL)
@@ -696,7 +696,7 @@ local function buildHub()
 			task.wait(remaining)
 		end
 
-		if not gui.Parent then
+		if not gui.Parent or isLaunching then
 			return
 		end
 
@@ -704,10 +704,10 @@ local function buildHub()
 		task.wait(0.4)
 		overlay:Destroy()
 
-		if hubSettings.AutoLoad then
+		if hubSettings.AutoLoad and not isLaunching then
 			local g = findCurrentGame()
 			if g then
-				runGame(g)
+				launch(g)
 			end
 		end
 	end)
@@ -974,7 +974,6 @@ local function buildKeySystem(initialMessage)
 	end)
 end
 
--- Auto-login with saved key
 local savedKey = loadSavedKey()
 
 if savedKey then
