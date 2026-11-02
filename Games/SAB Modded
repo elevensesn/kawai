@@ -1,0 +1,334 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "EnchantmentsUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function() gui.Parent = game:GetService("CoreGui") end)
+if not gui.Parent then gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+local main = Instance.new("Frame")
+main.Size = UDim2.fromOffset(220, 160)
+main.Position = UDim2.fromScale(0.5, 0.5)
+main.AnchorPoint = Vector2.new(0.5, 0.5)
+main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+main.BorderSizePixel = 0
+main.Active = false
+main.ClipsDescendants = false
+main.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 6)
+corner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(0, 0, 0)
+stroke.Thickness = 2
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = main
+
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 32)
+titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+titleBar.BorderSizePixel = 0
+titleBar.Active = true
+titleBar.Parent = main
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 6)
+titleCorner.Parent = titleBar
+
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 6)
+titleFix.Position = UDim2.new(0, 0, 1, -6)
+titleFix.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+titleFix.BorderSizePixel = 0
+titleFix.Parent = titleBar
+
+local titleIcon = Instance.new("ImageLabel")
+titleIcon.Size = UDim2.fromOffset(22, 22)
+titleIcon.Position = UDim2.fromOffset(10, 5)
+titleIcon.BackgroundTransparency = 1
+titleIcon.Image = "rbxassetid://4788466659"
+titleIcon.ImageColor3 = Color3.fromRGB(135, 206, 250)
+titleIcon.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(1, -60, 1, 0)
+titleText.Position = UDim2.fromOffset(38, 0)
+titleText.BackgroundTransparency = 1
+titleText.Font = Enum.Font.GothamBold
+titleText.Text = "enchantments"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextSize = 14
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.fromOffset(20, 20)
+closeBtn.Position = UDim2.new(1, -26, 0.5, -10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 10
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeBtn
+
+closeBtn.MouseButton1Click:Connect(function()
+    isSpamming = false
+    gui:Destroy()
+end)
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local dropdownBtn = Instance.new("TextButton")
+dropdownBtn.Size = UDim2.new(1, -20, 0, 28)
+dropdownBtn.Position = UDim2.fromOffset(10, 42)
+dropdownBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+dropdownBtn.Text = "Select Player..."
+dropdownBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+dropdownBtn.Font = Enum.Font.GothamBold
+dropdownBtn.TextSize = 12
+dropdownBtn.BorderSizePixel = 0
+dropdownBtn.ZIndex = 2
+dropdownBtn.Parent = main
+
+local dropCorner = Instance.new("UICorner")
+dropCorner.CornerRadius = UDim.new(0, 4)
+dropCorner.Parent = dropdownBtn
+
+local listFrame = Instance.new("ScrollingFrame")
+listFrame.Size = UDim2.new(1, -20, 0, 80)
+listFrame.Position = UDim2.fromOffset(10, 74)
+listFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+listFrame.BorderSizePixel = 0
+listFrame.Visible = false
+listFrame.ZIndex = 10
+listFrame.ScrollBarThickness = 2
+listFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+listFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+listFrame.ClipsDescendants = true
+listFrame.Parent = main
+
+local listCorner = Instance.new("UICorner")
+listCorner.CornerRadius = UDim.new(0, 4)
+listCorner.Parent = listFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 2)
+listLayout.Parent = listFrame
+
+local selectedPlayer = nil
+local isSpamming = false
+local spamTask = nil
+
+local function refreshList()
+    for _, child in ipairs(listFrame:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+    
+    local playerCount = 0
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            playerCount = playerCount + 1
+            
+            local pFrame = Instance.new("Frame")
+            pFrame.Size = UDim2.new(1, -4, 0, 32)
+            pFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            pFrame.BorderSizePixel = 0
+            pFrame.ZIndex = 11
+            pFrame.Parent = listFrame
+
+            local pCorner = Instance.new("UICorner")
+            pCorner.CornerRadius = UDim.new(0, 4)
+            pCorner.Parent = pFrame
+
+            local pfp = Instance.new("ImageLabel")
+            pfp.Size = UDim2.fromOffset(24, 24)
+            pfp.Position = UDim2.fromOffset(4, 4)
+            pfp.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            pfp.Image = "rbxthumb://type=AvatarHeadShot&id=" .. plr.UserId .. "&w=48&h=48"
+            pfp.ZIndex = 12
+            pfp.Parent = pFrame
+
+            local pfpCorner = Instance.new("UICorner")
+            pfpCorner.CornerRadius = UDim.new(1, 0)
+            pfpCorner.Parent = pfp
+
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(1, -40, 1, 0)
+            nameLabel.Position = UDim2.fromOffset(34, 0)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.Text = plr.Name
+            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nameLabel.Font = Enum.Font.GothamBold
+            nameLabel.TextSize = 12
+            nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+            nameLabel.ZIndex = 12
+            nameLabel.Parent = pFrame
+
+            local pBtn = Instance.new("TextButton")
+            pBtn.Size = UDim2.fromScale(1, 1)
+            pBtn.BackgroundTransparency = 1
+            pBtn.Text = ""
+            pBtn.ZIndex = 13
+            pBtn.Parent = pFrame
+
+            pBtn.MouseButton1Click:Connect(function()
+                selectedPlayer = plr
+                dropdownBtn.Text = plr.Name
+                dropdownBtn.TextColor3 = Color3.fromRGB(135, 206, 250)
+                listFrame.Visible = false
+            end)
+        end
+    end
+    
+    if playerCount == 0 then
+        local emptyLabel = Instance.new("TextLabel")
+        emptyLabel.Size = UDim2.new(1, 0, 0, 24)
+        emptyLabel.BackgroundTransparency = 1
+        emptyLabel.Text = "No other players."
+        emptyLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+        emptyLabel.Font = Enum.Font.GothamBold
+        emptyLabel.TextSize = 11
+        emptyLabel.Parent = listFrame
+    end
+end
+
+dropdownBtn.MouseButton1Click:Connect(function()
+    listFrame.Visible = not listFrame.Visible
+    if listFrame.Visible then
+        refreshList()
+    end
+end)
+
+Players.PlayerAdded:Connect(function(plr)
+    if listFrame and listFrame.Parent and listFrame.Visible then
+        refreshList()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if not gui.Parent then return end
+    if selectedPlayer == plr then
+        selectedPlayer = nil
+        dropdownBtn.Text = "Select Player..."
+        dropdownBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if isSpamming then
+            isSpamming = false
+            if spamTask then task.cancel(spamTask) spamTask = nil end
+            if spamBtn and spamBtn.Parent then
+                spamBtn.BackgroundColor3 = Color3.fromRGB(135, 206, 250)
+            end
+        end
+    end
+    if listFrame and listFrame.Parent and listFrame.Visible then 
+        refreshList() 
+    end
+end)
+
+local spamBtn = Instance.new("TextButton")
+spamBtn.Size = UDim2.new(1, -20, 0, 28)
+spamBtn.Position = UDim2.new(0, 10, 1, -38)
+spamBtn.BackgroundColor3 = Color3.fromRGB(135, 206, 250)
+spamBtn.Text = "Spam Admin Commands"
+spamBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+spamBtn.Font = Enum.Font.SourceSansBold
+spamBtn.TextSize = 14
+spamBtn.BorderSizePixel = 0
+spamBtn.ZIndex = 1
+spamBtn.Parent = main
+
+local spamCorner = Instance.new("UICorner")
+spamCorner.CornerRadius = UDim.new(0, 4)
+spamCorner.Parent = spamBtn
+
+local adminEvent = nil
+task.spawn(function()
+    local success, result = pcall(function()
+        return ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/AdminPanelService/ExecuteCommand")
+    end)
+    if success then
+        adminEvent = result
+    end
+end)
+
+spamBtn.MouseButton1Click:Connect(function()
+    if not selectedPlayer then return end
+    
+    isSpamming = not isSpamming
+    
+    if isSpamming then
+        spamBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+        spamTask = task.spawn(function()
+            local commands = {"ragdoll", "rocket", "balloon", "inverse", "jail", "tiny", "jumpscare", "morph"}
+            while isSpamming do
+                if not gui.Parent then
+                    isSpamming = false
+                    break
+                end
+                
+                if adminEvent and selectedPlayer and selectedPlayer.Parent then
+                    for _, cmd in ipairs(commands) do
+                        pcall(function()
+                            adminEvent:FireServer(selectedPlayer, cmd)
+                        end)
+                    end
+                else
+                    isSpamming = false
+                    if spamBtn and spamBtn.Parent then
+                        spamBtn.BackgroundColor3 = Color3.fromRGB(135, 206, 250)
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    else
+        if spamBtn and spamBtn.Parent then
+            spamBtn.BackgroundColor3 = Color3.fromRGB(135, 206, 250)
+        end
+        if spamTask then
+            task.cancel(spamTask)
+            spamTask = nil
+        end
+    end
+end)
