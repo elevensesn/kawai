@@ -207,7 +207,14 @@ local title = new("Frame", {
 	Position = UDim2.fromOffset(26, 0),
 	Size = UDim2.new(0, 200, 1, 0),
 }, topBar)
-makeIcon(title, "cat", 26, C.White, UDim2.fromScale(0, 0.5), Vector2.new(0, 0.5))
+new("ImageLabel", {
+	BackgroundTransparency = 1,
+	Size = UDim2.fromOffset(26, 26),
+	Position = UDim2.fromScale(0, 0.5),
+	AnchorPoint = Vector2.new(0, 0.5),
+	Image = "rbxassetid://4788466659",
+	ImageColor3 = C.White,
+}, title)
 new("TextLabel", {
 	BackgroundTransparency = 1,
 	Position = UDim2.fromOffset(36, 0),
